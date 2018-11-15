@@ -8,7 +8,9 @@ const fs = require('fs');
 
 const retweetLatest = async () => {
   try {
+    global.iterations++;
     for (let search of config.bot.search_list) {
+      log.info(`looking for search query >>${JSON.stringify(search)}<<`);
       const envelope = await T.get('search/tweets', search.query);
       let tweets = _.uniqBy(envelope.data.statuses, 'text');
 
@@ -20,6 +22,16 @@ const retweetLatest = async () => {
       // filter out tweets which I already retweeted
       tweets = tweets.filter(o => o.retweet_count === 0);
 
+      if (tweets.length > 0)
+        log.info(
+          `received ${envelope.data.statuses
+            .length} unfiltered tweets :: processing ${tweets.length} filtered tweets`
+        );
+      else
+        log.info(
+          `received ${envelope.data.statuses
+            .length} tweets but nothing to process this time`
+        );
       for (let tweet of tweets) {
         log.debug(tweet.text);
         const retweetId = tweet.id_str;

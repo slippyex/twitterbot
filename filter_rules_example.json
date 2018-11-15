@@ -1,0 +1,24 @@
+[
+  {
+    "query": {
+      "q": "#bitcoin lang:en -filter:retweets",
+      "count": 50,
+      "result_type": "recent"
+    },
+    "filter": "!in_reply"
+  },
+  {
+    "query": {
+      "q": "apple OR pear",
+      "count": 10,
+      "result_type": "recent"
+    }
+  },
+  {
+    "query": {
+      "q": "funny media:video",
+      "count": 50,
+      "result_type": "recent"
+    }
+  }
+]

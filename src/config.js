@@ -1,3 +1,4 @@
+const rules = require('../filter_rules');
 module.exports = {
   twitter: {
     consumer_key: process.env.TWITTER_CONSUMER_KEY,
@@ -9,31 +10,6 @@ module.exports = {
   bot: {
     port: 5555,
     frequency: 1000 * 60 * 15,
-    search_list: [
-      {
-        query: {
-          q: 'from:doc__com lang:en -filter:retweets',
-          count: 50,
-          result_type: 'recent'
-        },
-        filter: '!in_reply'
-      },
-      {
-        query: {
-          q: 'from:EristicaApp lang:en -filter:retweets',
-          count: 50,
-          result_type: 'recent'
-        },
-        filter: '!in_reply'
-      },
-      {
-        query: {
-          q: '#eristica lang:en -filter:retweets',
-          count: 50,
-          result_type: 'recent'
-        },
-        filter: '!in_reply'
-      }
-    ]
+    search_list: rules
   }
 };
