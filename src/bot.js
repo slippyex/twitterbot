@@ -37,7 +37,7 @@ const retweetLatest = async () => {
       );
     }
   } catch (err) {
-    console.log('There was an error with your hashtag search:', err);
+    log.error('There was an error with your search criteria:', err);
   }
 };
 
@@ -45,7 +45,7 @@ const tweeted = (err, reply) => {
   if (err !== undefined) {
     log.error(err);
   } else {
-    log.debug('Tweeted:', reply);
+    log.debug('Tweeted:', JSON.stringify(reply, null, 2));
   }
 };
 
