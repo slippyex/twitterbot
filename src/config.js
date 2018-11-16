@@ -9,7 +9,6 @@ module.exports = {
   logLevel: 'debug',
   bot: {
     port: 5555,
-    frequency: 1000 * 60 * 15,
-    search_list: rules
+    frequency: 1000 * 60 * 15
   }
 };

@@ -1,5 +1,6 @@
 [
   {
+    "id": 1,
     "query": {
       "q": "#bitcoin lang:en -filter:retweets",
       "count": 50,
@@ -8,6 +9,7 @@
     "filter": "!in_reply"
   },
   {
+    "id": 2,
     "query": {
       "q": "apple OR pear",
       "count": 10,
@@ -15,6 +17,7 @@
     }
   },
   {
+    "id": 3,
     "query": {
       "q": "funny media:video",
       "count": 50,
