@@ -41,10 +41,8 @@ const retrieveTweetListByFilter = async search => {
  * @param rawTweets
  * @returns {*}
  */
-const filterAlreadyTweeted = rawTweets => {
-  const retweetedIds = collectedRetweets.map(o => o.id);
-  return rawTweets.filter(t => !retweetedIds.includes(t.id_str));
-};
+const filterAlreadyTweeted = rawTweets =>
+  rawTweets.filter(t => !collectedRetweets.map(o => o.id).includes(t.id_str));
 
 /**
  * enables testing of new filter rules without initiating a retweet
@@ -63,7 +61,9 @@ module.exports.testFilter = async filter => {
  * @returns {Promise<void>}
  */
 module.exports.registerOwnUser = async () => {
-  const results = await T.get('account/verify_credentials', { skip_status: true });
+  const results = await T.get('account/verify_credentials', {
+    skip_status: true
+  });
   ownTwitterAccount = results.data.id_str;
 };
 
@@ -98,6 +98,9 @@ module.exports.retweetLatest = async () => {
       log.debug(tweet.text, {tweet_id: tweet.id_str});
       try {
         await T.post('statuses/retweet/' + tweet.id_str, {});
+        if(search.auto_like) {
+          await T.post('favorites/create/' + tweet.id_str, {});
+        }
         lastRetweet = moment().format('YYYY-MM-DD HH:mm:ss');
       } catch (err) {
         log.error(`duplicate retweet found`, {tweet_id: tweet.id_str});
@@ -115,6 +118,26 @@ module.exports.retweetLatest = async () => {
       JSON.stringify(collectedRetweets, null, 2)
     );
   }
+};
+
+/**
+ * cannot be used anymore since Twitter deprecated their User stream
+ * in August 2018
+ *
+ */
+module.exports.initializeFollowStream = () => {
+  log.info(`registering listener for Twitter API user stream - auto-follow activated`);
+  const userStream = T.stream('user', {});
+  userStream.on('connected', () => {
+    log.info(`connected to user stream`);
+  });
+  userStream.on('error', error => {
+    log.error(error);
+  });
+  userStream.on('follow', async eventMsg => {
+    log.info(`user ${eventMsg.source.screen_name} just followed me - will also follow him/her`);
+    await T.post('/friendships/create/' + eventMsg.source.id_str);
+  });
 };
 
 module.exports.collectedRetweets = () => collectedRetweets;

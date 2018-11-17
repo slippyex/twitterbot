@@ -1,4 +1,3 @@
-const rules = require('../filter_rules');
 module.exports = {
   twitter: {
     consumer_key: process.env.TWITTER_CONSUMER_KEY,
@@ -9,6 +8,7 @@ module.exports = {
   logLevel: 'debug',
   bot: {
     port: 5555,
-    frequency: 1000 * 60 * 15
+    frequency: 1000 * 60 * 15,
+    auto_follow_users: true
   }
 };
