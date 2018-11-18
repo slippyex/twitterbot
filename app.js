@@ -80,9 +80,12 @@ app.listen(config.bot.port, async function() {
   // get own user account to filter out tweets from myself
   await bot.registerOwnUser();
 
+  if(config.bot.hooks.sentRetweet.active) {
+    log.info(`registered retweet webhook to ${config.bot.hooks.sentRetweet.url}`);
+  }
   // initate the first retweet-iteration directly upon start
   await bot.retweetLatest();
-  log.debug(`SLiPPY's twitter bot listening on port ${config.bot.port}`);
+  log.info(`SLiPPY's twitter bot listening on port ${config.bot.port}`);
 });
 
 setInterval(bot.retweetLatest, config.bot.frequency);

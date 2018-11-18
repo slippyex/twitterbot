@@ -154,7 +154,7 @@ module.exports.retweetLatest = async () => {
   // in case we configured a webhook to send the results to,
   // send the whole list here
   if (tweetsSentInIteration.length > 0 && config.bot.hooks.sentRetweet.active) {
-    await axios.post(config.bot.hooks.sentRetweet, tweetsSentInIteration);
+    await axios.post(config.bot.hooks.sentRetweet.url, tweetsSentInIteration);
   }
 };
 

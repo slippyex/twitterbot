@@ -11,8 +11,10 @@ module.exports = {
     frequency: 1000 * 60 * 15,
     auto_follow_new_users: true,
     hooks: {
-      sentRetweet: process.env.TWITTERBOT_WEBHOOK_SENT_RETWEET,
-      active: !!process.env.TWITTERBOT_WEBHOOK_SENT_RETWEET
+      sentRetweet: {
+        url: process.env.TWITTERBOT_WEBHOOK_SENT_RETWEET,
+        active: !!process.env.TWITTERBOT_WEBHOOK_SENT_RETWEET
+      }
     }
   }
 };
