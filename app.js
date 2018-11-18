@@ -31,12 +31,13 @@ app.get('/', (req, res) => {
 });
 
 app.get('/status', (req, res) => {
+  const botStatus = bot.getStatus(req.query.detailed);
   res.status(200).json({
     status: 'ok',
-    retweets: bot.collectedRetweets(),
+    retweets: botStatus.retweets,
     uptime: utils.format(process.uptime()),
-    iterations: bot.getIteration(),
-    last_retweet: bot.getLastRetweet()
+    iterations: botStatus.iterations,
+    last_retweet: botStatus.last_retweet
   });
 });
 

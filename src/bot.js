@@ -12,7 +12,7 @@ let lastRetweet = 'n/a';
 let collectedRetweets = [];
 let ownTwitterAccount;
 let friendIds;
-let __iterations;
+let __iterations = 0;
 
 const fs = require('fs');
 
@@ -117,7 +117,8 @@ module.exports.retweetLatest = async () => {
         await T.post('statuses/retweet/' + tweet.id_str, {});
         // check, if we also want to auto-like the tweet
         if (search.auto_like) {
-          await T.post('favorites/create/' + tweet.id_str, {});
+          // TODO: issue in library - check with developers
+//          await T.post('favorites/create/:id', {id: tweet.id_str}, {});
         }
         lastRetweet = moment().format('YYYY-MM-DD HH:mm:ss');
         let followed = false;
@@ -126,8 +127,9 @@ module.exports.retweetLatest = async () => {
           search.auto_follow_new_users &&
           !friendIds.includes(tweet.user.id_str)
         ) {
-          await T.post('/friendships/create/' + tweet.user.id_str);
-          followed = true;
+          // TODO: issue in library - check with developers
+//          await T.post('/friendships/create/' + tweet.user.id_str);
+//          followed = true;
         }
         tweetsSentInIteration.push({
           text: tweet.text,
@@ -158,7 +160,12 @@ module.exports.retweetLatest = async () => {
   }
 };
 
-module.exports.collectedRetweets = () => collectedRetweets;
+module.exports.getStatus = (detailed) => {
+  return {
+    retweets: detailed ? collectedRetweets : collectedRetweets.length,
+    last_retweet: lastRetweet,
+    iterations: __iterations
+  };
+};
+
 module.exports.getOwnTwitterAccount = () => ownTwitterAccount;
-module.exports.getLastRetweet = () => lastRetweet;
-module.exports.getIteration = () => __iterations;
