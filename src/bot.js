@@ -3,6 +3,7 @@ const log = require('./logutils').getLogger('bot');
 const _ = require('lodash');
 const Twit = require('twit');
 const moment = require('moment');
+const axios = require('axios');
 
 const T = new Twit(config.twitter);
 
@@ -10,6 +11,8 @@ let lastRetweet = 'n/a';
 
 let collectedRetweets = [];
 let ownTwitterAccount;
+let friendIds;
+let __iterations;
 
 const fs = require('fs');
 
@@ -64,6 +67,20 @@ module.exports.registerOwnUser = async () => {
   const results = await T.get('account/verify_credentials', {
     skip_status: true
   });
+
+  let friendIdList = await T.get('followers/ids', {
+    count: 5000,
+    stringify_ids: true
+  });
+  friendIds = friendIdList.data.ids;
+  // TODO: work with cursor on followers > 5k
+  // let cursor = friendIdList.data.next_cursor_str;
+  // while(cursor !== '0') {
+  //   friendIdList = await T.get('followers/ids', {count: 50, stringify_ids: true, next_cursor_str: cursor});
+  //   friends.concat(friendIdList.data.ids);
+  //   cursor = friendIdList.data.next_cursor_str;
+  //   console.log(cursor);
+  // }
   ownTwitterAccount = results.data.id_str;
 };
 
@@ -82,12 +99,12 @@ module.exports.retweetLatest = async () => {
     log.info('first time start - no retweets.json found yet');
     collectedRetweets = [];
   }
-  global.iterations++;
+  __iterations++;
 
   const filter = fs.readFileSync(__dirname + '/../filter_rules.json', 'utf-8');
 
   const filterRules = JSON.parse(filter);
-
+  const tweetsSentInIteration = [];
   for (let search of filterRules) {
     log.info(`looking for search query >>${JSON.stringify(search)}<<`);
     const tweets = filterAlreadyTweeted(
@@ -95,13 +112,29 @@ module.exports.retweetLatest = async () => {
     );
 
     for (let tweet of tweets) {
-      log.debug(tweet.text, {tweet_id: tweet.id_str});
+      log.debug(tweet.text, {user: tweet.user.name, tweet_id: tweet.id_str});
       try {
         await T.post('statuses/retweet/' + tweet.id_str, {});
-        if(search.auto_like) {
+        // check, if we also want to auto-like the tweet
+        if (search.auto_like) {
           await T.post('favorites/create/' + tweet.id_str, {});
         }
         lastRetweet = moment().format('YYYY-MM-DD HH:mm:ss');
+        let followed = false;
+        // check, if we want to auto-follow new / yet unknown users
+        if (
+          search.auto_follow_new_users &&
+          !friendIds.includes(tweet.user.id_str)
+        ) {
+          await T.post('/friendships/create/' + tweet.user.id_str);
+          followed = true;
+        }
+        tweetsSentInIteration.push({
+          text: tweet.text,
+          user: tweet.user.name + (followed ? ' (*) ' : ''),
+          created: tweet.created_at,
+          by_filter: search.query.q
+        });
       } catch (err) {
         log.error(`duplicate retweet found`, {tweet_id: tweet.id_str});
       } finally {
@@ -118,28 +151,14 @@ module.exports.retweetLatest = async () => {
       JSON.stringify(collectedRetweets, null, 2)
     );
   }
-};
-
-/**
- * cannot be used anymore since Twitter deprecated their User stream
- * in August 2018
- *
- */
-module.exports.initializeFollowStream = () => {
-  log.info(`registering listener for Twitter API user stream - auto-follow activated`);
-  const userStream = T.stream('user', {});
-  userStream.on('connected', () => {
-    log.info(`connected to user stream`);
-  });
-  userStream.on('error', error => {
-    log.error(error);
-  });
-  userStream.on('follow', async eventMsg => {
-    log.info(`user ${eventMsg.source.screen_name} just followed me - will also follow him/her`);
-    await T.post('/friendships/create/' + eventMsg.source.id_str);
-  });
+  // in case we configured a webhook to send the results to,
+  // send the whole list here
+  if (tweetsSentInIteration.length > 0 && config.bot.hooks.sentRetweet.active) {
+    await axios.post(config.bot.hooks.sentRetweet, tweetsSentInIteration);
+  }
 };
 
 module.exports.collectedRetweets = () => collectedRetweets;
 module.exports.getOwnTwitterAccount = () => ownTwitterAccount;
 module.exports.getLastRetweet = () => lastRetweet;
+module.exports.getIteration = () => __iterations;

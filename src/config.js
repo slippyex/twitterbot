@@ -9,6 +9,10 @@ module.exports = {
   bot: {
     port: 5555,
     frequency: 1000 * 60 * 15,
-    auto_follow_users: true
+    auto_follow_new_users: true,
+    hooks: {
+      sentRetweet: process.env.TWITTERBOT_WEBHOOK_SENT_RETWEET,
+      active: !!process.env.TWITTERBOT_WEBHOOK_SENT_RETWEET
+    }
   }
 };

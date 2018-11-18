@@ -22,7 +22,6 @@ const setFilters = filterRules => {
 };
 
 const app = express();
-global.iterations = 0;
 
 app.use(bodyParser.json({limit: '10mb'}));
 app.use(bodyParser.urlencoded({limit: '10mb', extended: true}));
@@ -36,7 +35,7 @@ app.get('/status', (req, res) => {
     status: 'ok',
     retweets: bot.collectedRetweets(),
     uptime: utils.format(process.uptime()),
-    iterations: global.iterations,
+    iterations: bot.getIteration(),
     last_retweet: bot.getLastRetweet()
   });
 });
