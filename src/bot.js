@@ -65,13 +65,6 @@ module.exports.testFilter = async filter => {
  */
 module.exports.registerOwnUser = async () => {
 
-  try {
-    const tweetId = '1064443393038852097';
-    await T.post('favorites/create', {id: tweetId}, {});
-  } catch (err) {
-    console.log(err);
-  }
-
   const results = await T.get('account/verify_credentials', {
     skip_status: true
   });
