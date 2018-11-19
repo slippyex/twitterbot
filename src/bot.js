@@ -64,6 +64,14 @@ module.exports.testFilter = async filter => {
  * @returns {Promise<void>}
  */
 module.exports.registerOwnUser = async () => {
+
+  try {
+    const tweetId = '1064443393038852097';
+    await T.post('favorites/create', {id: tweetId}, {});
+  } catch (err) {
+    console.log(err);
+  }
+
   const results = await T.get('account/verify_credentials', {
     skip_status: true
   });
@@ -117,8 +125,7 @@ module.exports.retweetLatest = async () => {
         await T.post('statuses/retweet/' + tweet.id_str, {});
         // check, if we also want to auto-like the tweet
         if (search.auto_like) {
-          // TODO: issue in library - check with developers
-//          await T.post('favorites/create/:id', {id: tweet.id_str}, {});
+          await T.post('favorites/create', {id: tweet.id_str}, {});
         }
         lastRetweet = moment().format('YYYY-MM-DD HH:mm:ss');
         let followed = false;
@@ -127,9 +134,8 @@ module.exports.retweetLatest = async () => {
           search.auto_follow_new_users &&
           !friendIds.includes(tweet.user.id_str)
         ) {
-          // TODO: issue in library - check with developers
-//          await T.post('/friendships/create/' + tweet.user.id_str);
-//          followed = true;
+          await T.post('friendships/create', {user_id: tweet.user.id_str, follow: true });
+          followed = true;
         }
         tweetsSentInIteration.push({
           text: tweet.text,
