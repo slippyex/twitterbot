@@ -1,8 +1,8 @@
 {
     "name": "bot",
     "version": "1.0.0",
-    "description": "Twitter Bot - NodeJS",
-    "author": "Nishant Srivastava <nisrulz@gmail.com>",
+    "description": "SLiPPY's Twitter Bot",
+    "author": "Markus Velten <mvelten773@gmail.com>",
     "dependencies": {
         "axios": "^0.18.0",
         "body-parser": "^1.18.3",
@@ -22,5 +22,5 @@
         "url": "https://github.com/slippyex/twitterbot.git"
     },
     "analyze": true,
-    "license": "Apache-2.0"
+    "license": "MIT"
 }
