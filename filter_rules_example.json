@@ -14,7 +14,19 @@
       "q": "apple OR pear",
       "count": 10,
       "result_type": "recent"
-    }
+    },
+    "filter": "!in_reply",
+    "auto_like": true,
+    "auto_follow_new_users": true,
+    "follow_strategy": {
+      "type": "random",
+      "count": 5,
+      "follower_range": {
+        "min": 100,
+        "max": 2000
+      }
+    },
+    "retweet": false
   },
   {
     "id": 3,
@@ -22,6 +34,8 @@
       "q": "funny media:video",
       "count": 50,
       "result_type": "recent"
-    }
+    },
+    "auto_like": true,
+    "auto_follow_new_users": true
   }
 ]

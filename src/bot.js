@@ -64,7 +64,6 @@ module.exports.testFilter = async filter => {
  * @returns {Promise<void>}
  */
 module.exports.registerOwnUser = async () => {
-
   const results = await T.get('account/verify_credentials', {
     skip_status: true
   });
@@ -106,6 +105,8 @@ module.exports.retweetLatest = async () => {
 
   const filterRules = JSON.parse(filter);
   const tweetsSentInIteration = [];
+  const collectNewFriends = [];
+
   for (let search of filterRules) {
     log.info(`looking for search query >>${JSON.stringify(search)}<<`);
     const tweets = filterAlreadyTweeted(
@@ -113,45 +114,130 @@ module.exports.retweetLatest = async () => {
     );
 
     for (let tweet of tweets) {
-      log.debug(tweet.text, {user: tweet.user.name, tweet_id: tweet.id_str});
       try {
-        await T.post('statuses/retweet/' + tweet.id_str, {});
-        // check, if we also want to auto-like the tweet
-        if (search.auto_like) {
-          await T.post('favorites/create', {id: tweet.id_str}, {});
+        if (!search.hasOwnProperty('retweet') || search.retweet) {
+          log.debug(tweet.text, {
+            user: tweet.user.name,
+            tweet_id: tweet.id_str
+          });
+          await T.post('statuses/retweet/' + tweet.id_str, {});
+          tweetsSentInIteration.push({
+            text: tweet.text,
+            user: tweet.user.name,
+            created: tweet.created_at,
+            by_filter: search.query.q
+          });
+          // check, if we also want to auto-like the tweet
+          if (search.auto_like) {
+            await T.post('favorites/create', {id: tweet.id_str}, {});
+          }
+          lastRetweet = moment().format('YYYY-MM-DD HH:mm:ss');
         }
-        lastRetweet = moment().format('YYYY-MM-DD HH:mm:ss');
-        let followed = false;
         // check, if we want to auto-follow new / yet unknown users
         if (
           search.auto_follow_new_users &&
           !friendIds.includes(tweet.user.id_str)
         ) {
-          await T.post('friendships/create', {user_id: tweet.user.id_str, follow: true });
-          followed = true;
+          collectNewFriends.push(tweet.user);
         }
-        tweetsSentInIteration.push({
-          text: tweet.text,
-          user: tweet.user.name + (followed ? ' (*) ' : ''),
-          created: tweet.created_at,
-          by_filter: search.query.q
-        });
       } catch (err) {
         log.error(`duplicate retweet found`, {tweet_id: tweet.id_str});
       } finally {
-        collectedRetweets.push({
-          id: tweet.id_str,
-          text: tweet.text,
-          user: tweet.user.name,
-          retweeted: moment().format('YYYY-MM-DD HH:mm:ss')
-        });
+        if (!search.hasOwnProperty('retweet') || search.retweet) {
+          collectedRetweets.push({
+            id: tweet.id_str,
+            text: tweet.text,
+            user: tweet.user.name,
+            retweeted: moment().format('YYYY-MM-DD HH:mm:ss')
+          });
+        }
       }
     }
     fs.writeFileSync(
       __dirname + '/../tweeted/retweets.json',
       JSON.stringify(collectedRetweets, null, 2)
     );
+
+    // now check, if we wanted to add new friends here
+    // based on the filter definition
+    //
+    // we can have a type "randomized" which picks
+    // n-users from the collection list
+    //
+    // we also can filter out users with a min/max followers criteria
+    // so that we only follow users which have a minimum of n-followers
+    // and (optional) a maximum amount of m-followers
+    //
+    // an example filter would look like this
+    //
+    // {
+    //   "query": {
+    //   "q": "#bitcoin lang:en",
+    //     "count": 50,
+    //     "result_type": "recent"
+    // },
+    //   "filter": "!in_reply",
+    //   "auto_follow_new_users": true,
+    //   "follow_strategy": {
+    //   "type": "random",
+    //     "count": 5,
+    //     "follower_range": {
+    //     "min": 250,
+    //       "max": 2500
+    //   }
+    // },
+    //   "retweet": false,
+    //   "id": 8
+    // }
+    //
+    // it picks 50 tweets with hashtag #bitcoin from the recent feed
+    // filters out in-tweet replies
+    // sets auto_follow_new_users to true with the restriction to not retweet
+    // the actual post
+    // The follow-criteria is of type random which means, pick 5 random users
+    // out of the whole list which all have at least 250 followers but a max of 2500
+    //
+    if (collectNewFriends.length > 0) {
+      let filteredFriends = [];
+      if (search.hasOwnProperty('follow_strategy')) {
+        if (search.follow_strategy.hasOwnProperty('follower_range')) {
+          filteredFriends = collectNewFriends.filter(o => {
+            const min = search.follow_strategy.follower_range.min || 0;
+            const max =
+              search.follow_strategy.follower_range.max ||
+              Number.MAX_SAFE_INTEGER;
+            return o.followers_count > min && o.followers_count < max;
+          });
+        } else {
+          filteredFriends = _.clone(collectNewFriends);
+        }
+        if (search.follow_strategy.type.startsWith('random')) {
+          filteredFriends = _.shuffle(filteredFriends);
+          filteredFriends.length = Math.min(
+            filteredFriends.length,
+            search.follow_strategy.count || 0
+          );
+        }
+      } else {
+        filteredFriends = collectNewFriends;
+      }
+
+      for (let friend of filteredFriends) {
+        await T.post('friendships/create', {
+          user_id: friend.id_str,
+          follow: true
+        });
+        log.debug(
+          `now following user id >>${friend.name}<< who has ${
+            friend.followers_count
+          } followers - based on the filter definition ${JSON.stringify(
+            search
+          )}`
+        );
+      }
+    }
   }
+
   // in case we configured a webhook to send the results to,
   // send the whole list here
   if (tweetsSentInIteration.length > 0 && config.bot.hooks.sentRetweet.active) {
@@ -159,7 +245,7 @@ module.exports.retweetLatest = async () => {
   }
 };
 
-module.exports.getStatus = (detailed) => {
+module.exports.getStatus = detailed => {
   return {
     retweets: detailed ? collectedRetweets : collectedRetweets.length,
     last_retweet: lastRetweet,

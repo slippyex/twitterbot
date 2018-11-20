@@ -20,4 +20,19 @@ to `filter_rules.json` and define your own search criteria based on the Twitter 
 
 Once everything is set up, you can fire your copy of the twitter bot by simply calling `npm start`
 
-In case you want to run it as a background service, I suggest that you look into the `forever` package
+In case you want to run it as a background service, I suggest that you look into the `forever` package.
+
+## Prerequisites
+
+You need to apply for a developer account on twitter and create an application to 
+retrieve the above required keys.
+
+## Getting started
+
+1. Clone this repository `git clone https://github.com/slippyex/twitterbot.git && cd twitterbot`
+2. Install required depencies with `npm install`
+3. add the required environment variables as shown above
+4. copy `filter_rules_example.json` to `filter_rules.json`
+5. start the bot by `npm start`
+6. check out the REST interface on `http://localhost:5555/status`
+

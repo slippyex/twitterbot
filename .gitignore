@@ -4,3 +4,4 @@ package-lock.json
 node_modules/
 tweeted/retweets.json
 filter_rules.json
+prod_filter_rules.json
